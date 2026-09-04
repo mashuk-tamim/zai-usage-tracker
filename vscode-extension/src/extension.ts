@@ -3,11 +3,21 @@ import * as https from 'https';
 
 let statusBarItem: vscode.StatusBarItem;
 let refreshInterval: NodeJS.Timeout | null = null;
+let lastParsedData: any = null;
 
 export async function activate(context: vscode.ExtensionContext) {
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBarItem.command = 'zaiUsageTracker.refresh';
+  statusBarItem.command = 'zaiUsageTracker.showDetails';
   context.subscriptions.push(statusBarItem);
+
+  // Configure instant hover delay (100ms instead of 500ms default)
+  try {
+    const hoverConfig = vscode.workspace.getConfiguration('workbench');
+    const currentDelay = hoverConfig.get<number>('hover.delay');
+    if (currentDelay === undefined || currentDelay >= 300) {
+      await hoverConfig.update('hover.delay', 100, vscode.ConfigurationTarget.Global);
+    }
+  } catch {}
 
   // Attempt to migrate old key if present in plaintext config
   const oldKey = vscode.workspace.getConfiguration('zaiUsageTracker').get<string>('apiKey');
@@ -15,6 +25,11 @@ export async function activate(context: vscode.ExtensionContext) {
     await context.secrets.store('apiKey', oldKey);
     await vscode.workspace.getConfiguration('zaiUsageTracker').update('apiKey', undefined, vscode.ConfigurationTarget.Global);
   }
+
+  // 0. Show Details (Instant QuickPick modal on status bar click)
+  const showDetailsCommand = vscode.commands.registerCommand('zaiUsageTracker.showDetails', () => {
+    showDetailsQuickPick(context);
+  });
 
   // 1. Setup Wizard (Full setup on first install or manual launch)
   const setupWizardCommand = vscode.commands.registerCommand('zaiUsageTracker.setupWizard', async () => {
@@ -75,6 +90,7 @@ export async function activate(context: vscode.ExtensionContext) {
   });
 
   context.subscriptions.push(
+    showDetailsCommand,
     setupWizardCommand,
     refreshCommand,
     configureCommand,
@@ -350,13 +366,15 @@ async function updateUsageData(context: vscode.ExtensionContext) {
     const data = await fetchUsageData(apiKey);
     const parsed = parseQuotaResponse(data);
     
+    lastParsedData = parsed;
+    statusBarItem.command = 'zaiUsageTracker.showDetails';
+
     // Status bar text shows 5h and weekly percentage
     const sessionPct = parsed.sessionLimit ? Math.round(parsed.sessionLimit.percentage) : 0;
     const weeklyPct = parsed.weeklyLimit ? Math.round(parsed.weeklyLimit.percentage) : null;
     statusBarItem.text = weeklyPct !== null 
       ? `$(pulse) Z.ai: ${sessionPct}% (5h) | W: ${weeklyPct}%`
       : `$(pulse) Z.ai: ${sessionPct}% (5h)`;
-    statusBarItem.command = 'zaiUsageTracker.refresh';
     
     // Tooltip shows detailed breakdown
     const tz = config.get<string>('timezone') || 'Asia/Dhaka';
@@ -528,6 +546,8 @@ function buildTooltip(parsed: any, timezone: string, timeFormat: string = '12h')
     md.appendMarkdown(`Calls: ${parsed.mcpLimit.currentValue} / ${parsed.mcpLimit.usage}\n`);
   }
 
+  md.appendMarkdown(`\n---\n*💡 Click status bar item for instant details & actions*\n`);
+
   return md;
 }
 
@@ -535,18 +555,92 @@ function formatDate(epochMs: number, timezone: string, timeFormat: string = '12h
   try {
     const tzOption = timezone === 'local' ? undefined : timezone;
     const is24h = timeFormat === '24h';
-    const formatter = new Intl.DateTimeFormat(is24h ? 'en-GB' : 'en-US', {
+    const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: tzOption,
+      weekday: 'long',
       year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
+      month: 'long',
+      day: 'numeric',
       hour: is24h ? '2-digit' : 'numeric',
       minute: '2-digit',
       hour12: !is24h
     });
-    return formatter.format(new Date(epochMs)).replace(',', '');
+    return formatter.format(new Date(epochMs));
   } catch (e) {
     return new Date(epochMs).toLocaleString();
+  }
+}
+
+async function showDetailsQuickPick(context: vscode.ExtensionContext) {
+  if (!lastParsedData) {
+    updateUsageData(context);
+    return;
+  }
+  const config = vscode.workspace.getConfiguration('zaiUsageTracker');
+  const tz = config.get<string>('timezone') || 'Asia/Dhaka';
+  const timeFormat = config.get<string>('timeFormat') || '12h';
+
+  const items: vscode.QuickPickItem[] = [];
+
+  items.push({
+    label: `$(info) ${lastParsedData.planTier} Details`,
+    kind: vscode.QuickPickItemKind.Separator
+  });
+
+  if (lastParsedData.sessionLimit) {
+    const s = lastParsedData.sessionLimit;
+    const unit = s.type === 'CREDIT_LIMIT' ? 'Credits' : 'Tokens';
+    const resetStr = s.nextResetTime ? formatDate(s.nextResetTime, tz, timeFormat) : '5h rolling window';
+    items.push({
+      label: `$(pulse) 5-Hour Limit: ${Math.round(s.percentage)}% Used`,
+      description: `${formatNumber(s.currentValue)} / ${formatNumber(s.usage)} ${unit}`,
+      detail: `Reset Time: ${resetStr}`
+    });
+  }
+
+  if (lastParsedData.weeklyLimit) {
+    const w = lastParsedData.weeklyLimit;
+    const unit = w.type === 'CREDIT_LIMIT' ? 'Credits' : 'Tokens';
+    const resetStr = w.nextResetTime ? formatDate(w.nextResetTime, tz, timeFormat) : 'Weekly refresh';
+    items.push({
+      label: `$(calendar) Weekly Limit: ${Math.round(w.percentage)}% Used`,
+      description: `${formatNumber(w.currentValue)} / ${formatNumber(w.usage)} ${unit}`,
+      detail: `Reset Time: ${resetStr}`
+    });
+  }
+
+  if (lastParsedData.mcpLimit) {
+    const m = lastParsedData.mcpLimit;
+    items.push({
+      label: `$(tools) MCP Tool Calls: ${Math.round(m.percentage)}% Used`,
+      description: `${m.currentValue} / ${m.usage} calls`
+    });
+  }
+
+  items.push({
+    label: 'Actions',
+    kind: vscode.QuickPickItemKind.Separator
+  });
+
+  items.push(
+    { label: '$(refresh) Refresh Usage Now', description: 'Fetch latest usage from Z.ai' },
+    { label: '$(globe) Configure Timezone', description: `Current: ${tz}` },
+    { label: '$(gear) Setup / Full Configuration Wizard', description: 'Configure API key, timezone, and format' }
+  );
+
+  const selected = await vscode.window.showQuickPick(items, {
+    title: `${lastParsedData.planTier} — Quota & Reset Breakdown`,
+    placeHolder: 'Select an action or press Escape to close'
+  });
+
+  if (selected) {
+    if (selected.label.includes('Refresh Usage')) {
+      updateUsageData(context);
+    } else if (selected.label.includes('Configure Timezone')) {
+      vscode.commands.executeCommand('zaiUsageTracker.configureTimezone');
+    } else if (selected.label.includes('Setup / Full Configuration')) {
+      vscode.commands.executeCommand('zaiUsageTracker.setupWizard');
+    }
   }
 }
 
