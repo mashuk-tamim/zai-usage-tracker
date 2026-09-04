@@ -3,6 +3,13 @@
   "displayName": "Z.ai Usage Tracker",
   "description": "Track your Z.ai / GLM coding plan usage, 5-hour quota, and weekly quota.",
   "version": "1.0.0",
+  "publisher": "mashuk-tamim",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mashuk-tamim/zai-usage-tracker.git"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -36,7 +43,6 @@
     "configuration": {
       "title": "Z.ai Usage Tracker",
       "properties": {
-
         "zaiUsageTracker.timezone": {
           "type": "string",
           "default": "Asia/Dhaka",
@@ -77,8 +83,8 @@
     "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
+    "@vscode/vsce": "^3.9.2",
     "eslint": "^8.49.0",
     "typescript": "^5.2.2"
-  },
-  "dependencies": {}
+  }
 }
