@@ -61,7 +61,7 @@ Never guess when your 5-hour rolling limit or weekly quota resets again. This su
    ```
 4. Enable **Developer mode** using the toggle in the top-right corner.
 5. Click the **Load unpacked** button in the top-left corner.
-6. Select the repository root folder (`z-ai-usage-tracker`).
+6. Select the `chrome-extension` folder inside this repository.
 7. Click Chrome's extensions (puzzle piece) icon on the toolbar and **pin** **Z.ai GLM Usage Tracker** for 1-click access.
 
 ---
@@ -122,26 +122,28 @@ code --install-extension zai-usage-tracker-1.0.0.vsix
 
 ```text
 z-ai-usage-tracker/
-├── manifest.json            # Chrome Extension Manifest V3 definition
-├── background/
-│   └── service-worker.js   # Background alarms, badge color updater & API sync
-├── content/
-│   ├── content-script.js   # DOM observer, timestamp scraper & Dhaka time converter
-│   └── content-style.css   # In-page badge styling and floating widget design
-├── popup/
-│   ├── popup.html          # Toolbar popup UI
-│   ├── popup.css           # Glassmorphism dark-mode UI styles
-│   └── popup.js            # Real-time countdown timer & settings manager
-├── icons/                  # High-resolution extension icons (16px, 32px, 48px, 128px)
-├── generate-icons.py       # Pillow script for generating crisp multi-res icons
-├── vscode-extension/       # Companion Visual Studio Code extension
-│   ├── package.json        # Extension manifest, commands & configuration settings
-│   ├── tsconfig.json       # TypeScript configuration
+├── chrome-extension/        # Google Chrome Extension (Manifest V3)
+│   ├── manifest.json        # Extension manifest definition
+│   ├── background/
+│   │   └── service-worker.js# Alarms, dynamic badge updater & API sync
+│   ├── content/
+│   │   ├── content-script.js# In-page scraper & Dhaka timezone converter
+│   │   └── content-style.css# In-page badge styling and floating pill widget
+│   ├── popup/
+│   │   ├── popup.html       # Toolbar popup interface
+│   │   ├── popup.css        # Glassmorphism dark-mode styles
+│   │   └── popup.js         # Countdown ticker & settings controller
+│   ├── icons/               # 16px, 32px, 48px, 128px PNG icons
+│   ├── generate-icons.py    # Pillow script for generating icons
+│   └── CHROMEWEBSTORE.md    # Store listing assets & permissions rationale
+├── vscode-extension/        # Companion Visual Studio Code extension
+│   ├── package.json         # Extension manifest, commands & settings
+│   ├── tsconfig.json        # TypeScript configuration
 │   └── src/
-│       └── extension.ts    # Status bar controller, API poller & SecretStorage
-├── CHROMEWEBSTORE.md       # Store listing assets, promo copy & permission rationale
-├── .gitignore              # Ignored node_modules, build artifacts, OS files
-└── README.md               # Complete project documentation
+│       └── extension.ts     # Status bar controller, API poller & SecretStorage
+├── .gitignore               # Excluded dependencies, build artifacts, OS files
+├── LICENSE                  # MIT License
+└── README.md                # Project documentation
 ```
 
 ---
