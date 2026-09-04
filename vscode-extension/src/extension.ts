@@ -16,61 +16,78 @@ export async function activate(context: vscode.ExtensionContext) {
     await vscode.workspace.getConfiguration('zaiUsageTracker').update('apiKey', undefined, vscode.ConfigurationTarget.Global);
   }
 
+  // 1. Setup Wizard (Full setup on first install or manual launch)
+  const setupWizardCommand = vscode.commands.registerCommand('zaiUsageTracker.setupWizard', async () => {
+    await runSetupWizard(context);
+  });
+
+  // 2. Refresh Usage
   const refreshCommand = vscode.commands.registerCommand('zaiUsageTracker.refresh', () => {
     updateUsageData(context);
   });
   
+  // 3. Configure API Key
   const configureCommand = vscode.commands.registerCommand('zaiUsageTracker.configureApiKey', async () => {
-    const apiKey = await vscode.window.showInputBox({
-      prompt: 'Enter your Z.ai API Key',
-      password: true
-    });
-    if (apiKey) {
-      await context.secrets.store('apiKey', apiKey);
+    const saved = await promptForApiKey(context);
+    if (saved) {
       vscode.window.showInformationMessage('Z.ai API Key saved!');
-      updateUsageData(context);
-    }
-  });
-
-  const selectTimeFormatCommand = vscode.commands.registerCommand('zaiUsageTracker.selectTimeFormat', async () => {
-    const selected = await vscode.window.showQuickPick([
-      { label: '12h', description: '12-hour format with AM/PM (e.g. 01:14 PM)' },
-      { label: '24h', description: '24-hour format (e.g. 13:14)' }
-    ], {
-      placeHolder: 'Select Time Format for Reset Timestamps'
-    });
-    if (selected) {
-      await vscode.workspace.getConfiguration('zaiUsageTracker').update('timeFormat', selected.label, vscode.ConfigurationTarget.Global);
-      vscode.window.showInformationMessage(`Z.ai Time Format set to ${selected.label}`);
-      updateUsageData(context);
-    }
-  });
-
-  const configureIntervalCommand = vscode.commands.registerCommand('zaiUsageTracker.configureRefreshInterval', async () => {
-    const current = vscode.workspace.getConfiguration('zaiUsageTracker').get<number>('refreshIntervalMinutes') || 5;
-    const input = await vscode.window.showInputBox({
-      prompt: 'Enter background refresh interval in minutes (1 to 1440 mins / 24 hours)',
-      value: String(current),
-      validateInput: (val) => {
-        const num = parseInt(val, 10);
-        if (isNaN(num) || num < 1 || num > 1440) {
-          return 'Please enter a number between 1 and 1440 (minutes).';
-        }
-        return null;
+      // Prompt user to configure timezone immediately after configuring API key
+      const tzAction = await vscode.window.showInformationMessage(
+        'API Key saved. Would you like to configure your timezone now?',
+        'Configure Timezone',
+        'Keep Current'
+      );
+      if (tzAction === 'Configure Timezone') {
+        await promptForTimezone();
       }
-    });
-    if (input) {
-      const mins = Math.max(1, Math.min(1440, parseInt(input, 10) || 5));
-      await vscode.workspace.getConfiguration('zaiUsageTracker').update('refreshIntervalMinutes', mins, vscode.ConfigurationTarget.Global);
+      updateUsageData(context);
+    }
+  });
+
+  // 4. Configure Timezone
+  const configureTimezoneCommand = vscode.commands.registerCommand('zaiUsageTracker.configureTimezone', async () => {
+    const changed = await promptForTimezone();
+    if (changed) {
+      const tz = vscode.workspace.getConfiguration('zaiUsageTracker').get<string>('timezone') || 'Asia/Dhaka';
+      vscode.window.showInformationMessage(`Z.ai Timezone set to: ${tz}`);
+      updateUsageData(context);
+    }
+  });
+
+  // 5. Select Time Format (12h / 24h)
+  const selectTimeFormatCommand = vscode.commands.registerCommand('zaiUsageTracker.selectTimeFormat', async () => {
+    const changed = await promptForTimeFormat();
+    if (changed) {
+      const fmt = vscode.workspace.getConfiguration('zaiUsageTracker').get<string>('timeFormat') || '12h';
+      vscode.window.showInformationMessage(`Z.ai Time Format set to ${fmt}`);
+      updateUsageData(context);
+    }
+  });
+
+  // 6. Configure Refresh Interval
+  const configureIntervalCommand = vscode.commands.registerCommand('zaiUsageTracker.configureRefreshInterval', async () => {
+    const changed = await promptForRefreshInterval();
+    if (changed) {
+      const mins = vscode.workspace.getConfiguration('zaiUsageTracker').get<number>('refreshIntervalMinutes') || 5;
       vscode.window.showInformationMessage(`Z.ai Refresh interval set to ${mins} minute(s)!`);
       scheduleRefresh(context);
     }
   });
 
-  context.subscriptions.push(refreshCommand, configureCommand, selectTimeFormatCommand, configureIntervalCommand);
+  context.subscriptions.push(
+    setupWizardCommand,
+    refreshCommand,
+    configureCommand,
+    configureTimezoneCommand,
+    selectTimeFormatCommand,
+    configureIntervalCommand
+  );
 
   // Initial fetch
   updateUsageData(context);
+
+  // First installation welcome notification if no API key configured yet
+  checkFirstInstall(context);
 
   // Listen for config changes
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
@@ -83,6 +100,226 @@ export async function activate(context: vscode.ExtensionContext) {
   }));
 
   scheduleRefresh(context);
+}
+
+async function checkFirstInstall(context: vscode.ExtensionContext) {
+  const apiKey = await context.secrets.get('apiKey');
+  if (!apiKey) {
+    const prompted = context.globalState.get<boolean>('setupPrompted');
+    if (!prompted) {
+      await context.globalState.update('setupPrompted', true);
+      const start = await vscode.window.showInformationMessage(
+        'Welcome to Z.ai Usage Tracker! Configure your API key and timezone to start monitoring your quotas.',
+        'Start Setup Wizard',
+        'Later'
+      );
+      if (start === 'Start Setup Wizard') {
+        await runSetupWizard(context);
+      }
+    }
+  }
+}
+
+async function runSetupWizard(context: vscode.ExtensionContext) {
+  // Step 1: API Key
+  const keySaved = await promptForApiKey(context);
+  const currentKey = await context.secrets.get('apiKey');
+  if (!keySaved && !currentKey) {
+    vscode.window.showWarningMessage('Z.ai Setup cancelled: API key is required.');
+    return;
+  }
+
+  // Step 2: Timezone
+  await promptForTimezone();
+
+  // Step 3: Time Format
+  await promptForTimeFormat();
+
+  // Step 4: Refresh Interval
+  await promptForRefreshInterval();
+
+  vscode.window.showInformationMessage('🎉 Z.ai Usage Tracker configured successfully! Tracking is now active.');
+  scheduleRefresh(context);
+  updateUsageData(context);
+}
+
+async function promptForApiKey(context: vscode.ExtensionContext): Promise<boolean> {
+  const currentKey = await context.secrets.get('apiKey');
+  const apiKey = await vscode.window.showInputBox({
+    title: 'Z.ai: Configure API Key (Step 1/4)',
+    prompt: 'Enter your Z.ai API Key (from https://z.ai/manage-apikey/apikey-list)',
+    value: currentKey ? '••••••••••••••••' : '',
+    password: true,
+    ignoreFocusOut: true,
+    validateInput: (val) => {
+      if (!val || val.trim().length === 0) {
+        return 'API Key cannot be empty.';
+      }
+      return null;
+    }
+  });
+
+  if (!apiKey || (currentKey && apiKey === '••••••••••••••••')) {
+    return false;
+  }
+
+  await context.secrets.store('apiKey', apiKey.trim());
+  return true;
+}
+
+async function promptForTimezone(): Promise<boolean> {
+  let localTz = 'UTC';
+  try {
+    localTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {}
+
+  const currentTz = vscode.workspace.getConfiguration('zaiUsageTracker').get<string>('timezone') || 'Asia/Dhaka';
+
+  const timezoneItems: (vscode.QuickPickItem & { tzValue?: string; isCustom?: boolean })[] = [
+    {
+      label: '$(star) Asia/Dhaka',
+      description: 'UTC+6 — Bangladesh Standard Time (Recommended)',
+      tzValue: 'Asia/Dhaka'
+    },
+    {
+      label: `$(device-desktop) Local Timezone (${localTz})`,
+      description: 'Uses your system local timezone',
+      tzValue: localTz
+    },
+    {
+      label: 'Asia/Shanghai',
+      description: 'UTC+8 — Beijing / China Standard Time (Dashboard Default)',
+      tzValue: 'Asia/Shanghai'
+    },
+    {
+      label: 'Asia/Singapore',
+      description: 'UTC+8 — Singapore Standard Time',
+      tzValue: 'Asia/Singapore'
+    },
+    {
+      label: 'Asia/Kolkata',
+      description: 'UTC+5:30 — India Standard Time',
+      tzValue: 'Asia/Kolkata'
+    },
+    {
+      label: 'UTC',
+      description: 'Coordinated Universal Time',
+      tzValue: 'UTC'
+    },
+    {
+      label: 'Europe/London',
+      description: 'UTC+0 / UTC+1 — London (GMT/BST)',
+      tzValue: 'Europe/London'
+    },
+    {
+      label: 'America/New_York',
+      description: 'UTC-5 / UTC-4 — US Eastern Time (EST/EDT)',
+      tzValue: 'America/New_York'
+    },
+    {
+      label: 'America/Los_Angeles',
+      description: 'UTC-8 / UTC-7 — US Pacific Time (PST/PDT)',
+      tzValue: 'America/Los_Angeles'
+    },
+    {
+      label: 'Asia/Tokyo',
+      description: 'UTC+9 — Japan Standard Time',
+      tzValue: 'Asia/Tokyo'
+    },
+    {
+      label: '$(pencil) Enter custom IANA Timezone...',
+      description: 'e.g. America/Chicago, Europe/Berlin, Australia/Sydney',
+      isCustom: true
+    }
+  ];
+
+  const picked = await vscode.window.showQuickPick(timezoneItems, {
+    title: 'Z.ai: Configure Timezone (Step 2/4)',
+    placeHolder: `Current: ${currentTz}. Select a timezone for reset timestamps:`
+  });
+
+  if (!picked) return false;
+
+  let chosenTz = picked.tzValue;
+  if (picked.isCustom) {
+    const custom = await vscode.window.showInputBox({
+      title: 'Z.ai: Enter Custom Timezone',
+      prompt: 'Enter a valid IANA timezone identifier (e.g. America/Chicago, Europe/Paris, Asia/Dubai)',
+      value: currentTz,
+      validateInput: (val) => {
+        if (!val || val.trim().length === 0) return 'Timezone cannot be empty.';
+        try {
+          Intl.DateTimeFormat(undefined, { timeZone: val.trim() });
+          return null;
+        } catch {
+          return 'Invalid IANA timezone identifier. Examples: Asia/Dhaka, Europe/Berlin, America/Toronto.';
+        }
+      }
+    });
+    if (!custom) return false;
+    chosenTz = custom.trim();
+  }
+
+  if (chosenTz) {
+    await vscode.workspace.getConfiguration('zaiUsageTracker').update('timezone', chosenTz, vscode.ConfigurationTarget.Global);
+    return true;
+  }
+  return false;
+}
+
+async function promptForTimeFormat(): Promise<boolean> {
+  const currentFormat = vscode.workspace.getConfiguration('zaiUsageTracker').get<string>('timeFormat') || '12h';
+  const selected = await vscode.window.showQuickPick([
+    { label: '12h', description: '12-hour format with AM/PM (e.g. 01:14 PM)' },
+    { label: '24h', description: '24-hour military format (e.g. 13:14)' }
+  ], {
+    title: 'Z.ai: Select Time Format (Step 3/4)',
+    placeHolder: `Current: ${currentFormat}. Select time display format for timestamps:`
+  });
+
+  if (selected) {
+    await vscode.workspace.getConfiguration('zaiUsageTracker').update('timeFormat', selected.label, vscode.ConfigurationTarget.Global);
+    return true;
+  }
+  return false;
+}
+
+async function promptForRefreshInterval(): Promise<boolean> {
+  const current = vscode.workspace.getConfiguration('zaiUsageTracker').get<number>('refreshIntervalMinutes') || 5;
+  const picked = await vscode.window.showQuickPick([
+    { label: '5 minutes', description: 'Recommended balance of freshness and efficiency', mins: 5 },
+    { label: '1 minute', description: 'Frequent real-time quota updates', mins: 1 },
+    { label: '15 minutes', description: 'Low background network usage', mins: 15 },
+    { label: '30 minutes', description: 'Periodic background check', mins: 30 },
+    { label: '60 minutes', description: 'Once per hour', mins: 60 },
+    { label: '$(pencil) Custom minutes...', description: 'Specify between 1 and 1440 minutes', mins: -1 }
+  ], {
+    title: 'Z.ai: Refresh Interval (Step 4/4)',
+    placeHolder: `Current: ${current} min. Choose background refresh interval:`
+  });
+
+  if (!picked) return false;
+
+  let mins = picked.mins;
+  if (mins === -1) {
+    const input = await vscode.window.showInputBox({
+      title: 'Z.ai: Custom Refresh Interval',
+      prompt: 'Enter interval in minutes (1 to 1440)',
+      value: String(current),
+      validateInput: (val) => {
+        const num = parseInt(val, 10);
+        if (isNaN(num) || num < 1 || num > 1440) {
+          return 'Enter a valid number between 1 and 1440.';
+        }
+        return null;
+      }
+    });
+    if (!input) return false;
+    mins = parseInt(input, 10);
+  }
+
+  await vscode.workspace.getConfiguration('zaiUsageTracker').update('refreshIntervalMinutes', mins, vscode.ConfigurationTarget.Global);
+  return true;
 }
 
 function scheduleRefresh(context: vscode.ExtensionContext) {
@@ -100,8 +337,8 @@ async function updateUsageData(context: vscode.ExtensionContext) {
 
   if (!apiKey) {
     statusBarItem.text = `$(key) Z.ai: Setup API Key`;
-    statusBarItem.tooltip = 'Click to configure Z.ai API Key';
-    statusBarItem.command = 'zaiUsageTracker.configureApiKey';
+    statusBarItem.tooltip = 'Click to run the Z.ai setup wizard';
+    statusBarItem.command = 'zaiUsageTracker.setupWizard';
     statusBarItem.show();
     return;
   }

@@ -40,10 +40,12 @@ Available under **Settings (`Cmd + ,`) > Extensions > Z.ai Usage Tracker**:
 
 ## Commands
 
+- `Z.ai: Setup / Full Configuration Wizard` - Guided step-by-step setup (API key, timezone, format, refresh interval).
+- `Z.ai: Configure Timezone` - Select your timezone (defaults to `Asia/Dhaka`, local system, or custom IANA).
+- `Z.ai: Configure API Key` - Set or update your Z.ai API key (prompts to configure timezone next).
+- `Z.ai: Select Time Format (12h / 24h)` - Quick pick for 12-hour AM/PM or 24-hour display.
+- `Z.ai: Configure Refresh Interval (minutes)` - Adjust background polling frequency.
 - `Z.ai: Refresh Usage` - Manually trigger an immediate quota fetch.
-- `Z.ai: Configure API Key` - Set or update your Z.ai API key.
-- `Z.ai: Select Time Format (12h / 24h)` - Quick pick for time display style.
-- `Z.ai: Configure Refresh Interval (minutes)` - Adjust polling frequency.
 
 ---
 
