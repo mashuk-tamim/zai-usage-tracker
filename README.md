@@ -108,10 +108,11 @@ code --install-extension zai-usage-tracker-1.0.0.vsix
 1. Press `Cmd + Shift + P` (macOS) or `Ctrl + Shift + P` (Windows/Linux).
 2. Type and run:
    ```text
-   Z.ai: Configure API Key
+   Z.ai: Setup / Full Configuration Wizard
    ```
-3. Paste your key and press `Enter`. The key is saved into your operating system's keychain via VS Code `SecretStorage`.
-4. Configure extension settings via `Settings` (`Cmd + ,`):
+   *(Or run individual commands: `Z.ai: Configure API Key`, `Z.ai: Configure Timezone`, `Z.ai: Select Time Format`, `Z.ai: Configure Refresh Interval`).*
+3. Follow the quick prompts to set your API Key (stored in OS Keychain via `SecretStorage`), Timezone (`Asia/Dhaka` or local), Time Format (`12h` or `24h`), and refresh interval.
+4. Settings can also be adjusted anytime via **Settings** (`Cmd + ,`):
    - `zaiUsageTracker.timezone`: `Asia/Dhaka` (or any IANA timezone identifier)
    - `zaiUsageTracker.timeFormat`: `12h` or `24h`
    - `zaiUsageTracker.refreshIntervalMinutes`: Interval in minutes (default: `5`)

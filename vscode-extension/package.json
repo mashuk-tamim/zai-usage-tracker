@@ -23,6 +23,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "zaiUsageTracker.setupWizard",
+        "title": "Z.ai: Setup / Full Configuration Wizard"
+      },
+      {
         "command": "zaiUsageTracker.refresh",
         "title": "Z.ai: Refresh Usage",
         "icon": "$(refresh)"
@@ -30,6 +34,10 @@
       {
         "command": "zaiUsageTracker.configureApiKey",
         "title": "Z.ai: Configure API Key"
+      },
+      {
+        "command": "zaiUsageTracker.configureTimezone",
+        "title": "Z.ai: Configure Timezone"
       },
       {
         "command": "zaiUsageTracker.selectTimeFormat",
