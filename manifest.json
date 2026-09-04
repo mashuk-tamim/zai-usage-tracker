@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Z.ai GLM Usage Tracker & Dhaka Time",
+  "version": "1.0.0",
+  "description": "Track your Z.ai / GLM coding plan usage, 5-hour quota reset countdown, and convert Beijing time (UTC+8) to Dhaka (UTC+6).",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Z.ai GLM Usage & Dhaka Time",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://api.z.ai/*",
+    "https://open.bigmodel.cn/*",
+    "https://z.ai/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://z.ai/manage-apikey/coding-plan/*",
+        "*://*.z.ai/manage-apikey/coding-plan/*",
+        "*://open.bigmodel.cn/manage-apikey/coding-plan/*"
+      ],
+      "js": ["content/content-script.js"],
+      "css": ["content/content-style.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  }
+}

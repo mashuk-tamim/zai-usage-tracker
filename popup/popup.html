@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Z.ai GLM Usage Tracker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-branding">
+        <div class="logo-icon">Z</div>
+        <div class="title-group">
+          <h1>Z.ai Usage</h1>
+          <span id="plan-badge" class="badge-plan">GLM Lite Plan</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-settings-toggle" class="icon-button" title="Settings" aria-label="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Timezone Information Ribbon -->
+    <div class="timezone-ribbon">
+      <div class="tz-icon">🇧🇩</div>
+      <div class="tz-text">
+        <span class="tz-primary">Dhaka Time (UTC+6)</span>
+        <span class="tz-secondary">2 hours behind Beijing (UTC+8)</span>
+      </div>
+      <span class="live-dot" title="Live sync active"></span>
+    </div>
+
+    <!-- Main Content Body -->
+    <main class="dashboard">
+      <!-- 5-Hour Rolling Quota Card -->
+      <section class="metric-card primary-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-indicator"></span>
+            <h3>5-Hour Rolling Quota</h3>
+          </div>
+          <span id="session-pct" class="card-pct">0%</span>
+        </div>
+
+        <div class="progress-bar-container">
+          <div id="session-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+
+        <div class="card-metrics-row">
+          <span id="session-numbers" class="metric-sub">0 / 800M tokens</span>
+          <span id="session-status-text" class="status-pill green">Normal</span>
+        </div>
+
+        <div class="reset-timer-box">
+          <div class="timer-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div class="timer-content">
+            <div class="timer-label">Next Reset in Dhaka Time:</div>
+            <div id="reset-countdown" class="timer-value">Active & Ready</div>
+            <div id="reset-timestamp" class="timer-timestamp">--:-- -- (Dhaka UTC+6)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Weekly Allowance Card -->
+      <section class="metric-card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <h3>Weekly Allowance</h3>
+          </div>
+          <span id="weekly-pct" class="card-pct-small">0%</span>
+        </div>
+
+        <div class="progress-bar-container small">
+          <div id="weekly-progress-fill" class="progress-bar-fill weekly" style="width: 0%;"></div>
+        </div>
+
+        <div class="card-metrics-row">
+          <span id="weekly-numbers" class="metric-sub">Quota usage</span>
+          <span id="weekly-status-text" class="metric-sub">7-day window</span>
+        </div>
+      </section>
+
+      <!-- MCP & Tool Calls Card -->
+      <section id="mcp-card" class="metric-card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <h3>MCP & Tool Calls</h3>
+          </div>
+          <span id="mcp-pct" class="card-pct-small">0%</span>
+        </div>
+        <div class="card-metrics-row">
+          <span id="mcp-numbers" class="metric-sub">Tool calls & Web searches</span>
+          <span id="mcp-remaining" class="metric-sub">Monthly allowance</span>
+        </div>
+      </section>
+
+      <!-- Quick Sync Banner / Notice if No API Key -->
+      <div id="no-key-banner" class="banner-notice">
+        <div class="notice-icon">💡</div>
+        <div class="notice-text">
+          <strong>Pro-Tip:</strong> Enter your Z.ai API Key in Settings below for 24/7 background sync and live toolbar badge updates!
+        </div>
+      </div>
+    </main>
+
+    <!-- Settings Drawer / Accordion -->
+    <section id="settings-panel" class="settings-drawer hidden">
+      <div class="settings-header">
+        <h3>Extension Settings</h3>
+        <button id="btn-close-settings" class="icon-button-small">✕</button>
+      </div>
+
+      <div class="setting-item">
+        <label for="api-key-input">Z.ai API Key</label>
+        <div class="input-password-wrapper">
+          <input type="password" id="api-key-input" placeholder="Paste your key (starts with ...)">
+          <button id="btn-toggle-key-visibility" type="button" class="btn-eye" title="Show/Hide Key">👁️</button>
+        </div>
+        <small class="helper-text">
+          Found at <a id="link-get-key" href="https://z.ai/manage-apikey/apikey-list" target="_blank">z.ai/manage-apikey/apikey-list</a>
+        </small>
+      </div>
+
+      <div class="setting-item">
+        <label for="timezone-select">Display Timezone</label>
+        <select id="timezone-select">
+          <!-- Populated dynamically via JS -->
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="timeformat-select">Time Format</label>
+        <select id="timeformat-select">
+          <option value="12h" selected>12-hour (e.g. 01:14 PM)</option>
+          <option value="24h">24-hour (e.g. 13:14)</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="region-select">API Platform Region</label>
+        <select id="region-select">
+          <option value="global" selected>Z.ai Global (api.z.ai)</option>
+          <option value="bigmodel-cn">BigModel China (open.bigmodel.cn)</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="interval-input">Background Refresh Interval (1 to 1440 mins)</label>
+        <div class="input-number-wrapper">
+          <input type="number" id="interval-input" min="1" max="1440" value="5" placeholder="5">
+          <span class="input-suffix">mins</span>
+        </div>
+        <small class="helper-text">Accepts 1 min up to 1440 mins (24 hours). Default: 5.</small>
+      </div>
+
+      <div class="settings-actions">
+        <button id="btn-save-settings" class="btn-primary">Save Settings</button>
+      </div>
+    </section>
+
+    <!-- Footer Controls -->
+    <footer class="app-footer">
+      <div class="footer-status">
+        <span id="last-updated-text">Checking...</span>
+      </div>
+      <div class="footer-buttons">
+        <button id="btn-refresh" class="btn-secondary" title="Refresh Usage Data">
+          <svg id="refresh-spinner" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
+        <a id="btn-open-dashboard" class="btn-accent" href="https://z.ai/manage-apikey/coding-plan/personal/usage" target="_blank">
+          <span>Open Dashboard</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
+      </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">Settings saved successfully!</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

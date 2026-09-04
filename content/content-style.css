@@ -1,0 +1,131 @@
+/* Content Script Styles for Z.ai Dhaka Timezone Converter */
+
+.zai-time-converted-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  vertical-align: middle;
+}
+
+.zai-dhaka-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15));
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #059669;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+  cursor: help;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .zai-dhaka-badge {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.2));
+    border-color: rgba(52, 211, 153, 0.4);
+    color: #34D399;
+  }
+}
+
+[data-theme='dark'] .zai-dhaka-badge {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.2));
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #34D399;
+}
+
+.zai-dhaka-badge:hover {
+  background: rgba(16, 185, 129, 0.28);
+  border-color: #10B981;
+}
+
+.zai-original-time {
+  opacity: 0.75;
+  text-decoration: line-through;
+  font-size: 0.9em;
+  margin-right: 4px;
+}
+
+/* Floating helper pill on z.ai page */
+.zai-tracker-floating-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: rgba(17, 24, 39, 0.94);
+  color: #F9FAFB;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(75, 85, 99, 0.4);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  transition: all 0.25s ease;
+  max-width: 360px;
+}
+
+.zai-tracker-floating-widget:hover {
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 14px 30px -5px rgba(79, 70, 229, 0.25);
+}
+
+.zai-tracker-floating-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #4F46E5, #06B6D4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.zai-tracker-floating-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zai-tracker-floating-title {
+  font-weight: 600;
+  color: #F3F4F6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zai-tracker-floating-subtitle {
+  color: #9CA3AF;
+  font-size: 11px;
+}
+
+.zai-tracker-floating-close {
+  background: none;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.zai-tracker-floating-close:hover {
+  color: #F3F4F6;
+}
