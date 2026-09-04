@@ -305,9 +305,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const tzOption = timezone === 'local' ? undefined : timezone;
     const is24h = (timeFormat || currentTimeFormat) === '24h';
-    const timeFormatter = new Intl.DateTimeFormat(is24h ? 'en-GB' : 'en-US', {
+    const timeFormatter = new Intl.DateTimeFormat('en-US', {
       timeZone: tzOption,
-      month: 'short',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: is24h ? '2-digit' : 'numeric',
       minute: '2-digit',
@@ -316,7 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const formattedTzTime = timeFormatter.format(new Date(resetEpoch));
     const tzLabel = timezone === 'Asia/Dhaka' ? 'Dhaka' : timezone === 'Asia/Shanghai' ? 'Beijing' : 'Local';
-    resetTimestamp.textContent = `at ${formattedTzTime} (${tzLabel} time)`;
+    resetTimestamp.textContent = `${formattedTzTime} (${tzLabel} time)`;
 
     if (diffMs <= 0) {
       resetCountdown.textContent = 'Quota Reset Available';

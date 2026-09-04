@@ -23,6 +23,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "zaiUsageTracker.showDetails",
+        "title": "Z.ai: Show Usage Details"
+      },
+      {
         "command": "zaiUsageTracker.setupWizard",
         "title": "Z.ai: Setup / Full Configuration Wizard"
       },
